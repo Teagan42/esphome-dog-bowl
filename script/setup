@@ -11,6 +11,8 @@ source venv/bin/activate
 # Avoid unsafe git error when running inside devcontainer
 if [ -n "$DEVCONTAINER" ];then
   git config --global --add safe.directory "$PWD"
+  git config --global user.email "that@teagantotally.rocks"
+  git config --global user.name "Teagan42"
 fi
 
 pip3 install esphome

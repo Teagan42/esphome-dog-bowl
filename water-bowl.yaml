@@ -1,0 +1,119 @@
+substitutions:
+  name: esp32-water-bowl
+  friendly_name: "Water Bowl"
+  wifi_ssid: !secret wifi_ssid
+  wifi_password: !secret wifi_password
+  # api_encryption: !secret api_encryption
+  # ota_password: !secret ota_password
+
+esphome:
+  name: ${name}
+  friendly_name: ${name}
+
+esp32:
+  board: esp32-devkitlipo
+
+# Enable logging
+logger:
+  level: VERY_VERBOSE
+
+improv_serial:
+# Enable Home Assistant API
+api:
+
+ota:
+
+mqtt:
+  broker: 10.0.13.228
+  port: 1883
+  username: watebowl
+  client_id: waterbowl
+
+wifi:
+  ssid: ${wifi_ssid}
+  password: ${wifi_password}
+  manual_ip:
+    static_ip: 10.0.13.193
+    gateway: 10.0.12.1
+    subnet: 255.255.254.0
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Esp32-Water-Bowl"
+    password: "dLW8Ah7ouCN7"
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: 25
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    name: "Water Low"
+    on_press:
+      - switch.turn_on: coldRelay
+
+  - platform: gpio
+    pin:
+      number: 26
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    name: "Water Medium"
+
+  - platform: gpio
+    pin:
+      number: 27
+      mode:
+        input: true
+        pullup: true
+    name: "Water High"
+    on_press:
+      - switch.turn_off: coldRelay
+
+switch:
+  - platform: gpio
+    pin: 13
+    name: "Cold Water Valve"
+    id: coldRelay
+    interlock: [hotRelay]
+
+  - platform: gpio
+    pin: 12
+    name: "Hot Water Valve"
+    id: hotRelay
+    interlock: [coldRelay]
+    on_turn_on:
+      - delay: 1000ms
+      - switch.turn_on: soapPump
+    on_turn_off:
+      - output.turn_on: drain
+      - output.ledc.set_frequency:
+          id: drain
+          frequency: 5000Hz
+      - output.set_level:
+          id: drain
+          level: 80%
+      - delay: 5000ms
+      - output.turn_off: drain
+      - switch.turn_on: coldRelay
+
+  - platform: gpio
+    pin: 14
+    name: "Soap Pump"
+    id: soapPump
+    on_turn_on:
+      - delay: 1000ms
+      - switch.turn_off: soapPump
+    on_turn_off:
+      - delay: 2000ms
+      - switch.turn_off: hotRelay
+
+output:
+  - platform: ledc
+    pin: GPIO19
+    id: drain
+
+
